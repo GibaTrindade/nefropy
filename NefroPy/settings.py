@@ -86,7 +86,11 @@ DATABASES = {
         }
     }
 
-
+JAZZMIN_SETTINGS = {
+    "site_brand": "NefroPY",
+    "order_with_respect_to": ["core.paciente", "core.conduta", "core.acesso",
+                              "core.observacao", "core.producao", "core.hospital"],
+}
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
