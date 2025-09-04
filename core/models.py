@@ -1,9 +1,32 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user
+from django.core.validators import MinValueValidator
 from django.utils import timezone
+from decimal import Decimal
 
 # Create your models here.
+
+class Procedimento(models.Model):
+    TIPO_BOOLEANO = "bool"
+    TIPO_INTEIRO = "int"
+    TIPO_CHOICES = [
+        (TIPO_BOOLEANO, "Booleano (0/1)"),
+        (TIPO_INTEIRO, "Inteiro (quantidade)"),
+    ]
+
+    nome = models.CharField(max_length=100, unique=True)
+    tipo = models.CharField(max_length=8, choices=TIPO_CHOICES, default=TIPO_BOOLEANO)
+    ativo = models.BooleanField(default=True)
+
+    # (opcional) códigos de tabela, unidade de medida, etc.
+    codigo = models.CharField(max_length=50, blank=True, null=True)
+    unidade = models.CharField(max_length=20, blank=True, null=True)
+
+    def __str__(self):
+        return self.nome
+    
+
 class Setor(models.Model):
     nome = models.CharField(max_length=20, blank=False, null=False)
     criado_em = models.DateField(auto_now_add=True)
@@ -107,36 +130,105 @@ class Conduta(models.Model):
     def __str__(self):
         return self.descricao.descricao
 
-class Procedimento(models.Model):
-    nome = models.CharField(max_length=100, blank=False, null=False)
-    valor = models.FloatField(blank=False, null=False)
+
+class ProcedimentoValor(models.Model):
+    procedimento = models.ForeignKey(Procedimento, on_delete=models.CASCADE)
+    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE)
+    convenio = models.ForeignKey(Convenio, on_delete=models.SET_NULL, null=True, blank=True)
+    valor = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0"))])
+    vigencia_inicio = models.DateField()
+    vigencia_fim = models.DateField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("procedimento", "hospital", "convenio", "vigencia_inicio")
 
     def __str__(self):
-        return self.nome
+        conv = self.convenio.nome if self.convenio else "Todos convênios"
+        fim = self.vigencia_fim or "sem fim"
+        return f"{self.procedimento} @ {self.hospital} / {conv} ({self.vigencia_inicio} → {fim})"
+
+    @classmethod
+    def valor_em(cls, procedimento, hospital, convenio, data):
+        """
+        Recupera o preço vigente na data.
+        Regra: (vigencia_inicio <= data) & (vigencia_fim is null or data <= vigencia_fim)
+        Se não houver tarifa específica do convênio, tenta 'convenio=None'.
+        """
+        qs = cls.objects.filter(
+            procedimento=procedimento, hospital=hospital,
+            vigencia_inicio__lte=data
+        ).filter(models.Q(vigencia_fim__isnull=True) | models.Q(vigencia_fim__gte=data))
+        if convenio:
+            pv = qs.filter(convenio=convenio).order_by("-vigencia_inicio").first()
+            if pv:
+                return pv.valor
+        pv_generic = qs.filter(convenio__isnull=True).order_by("-vigencia_inicio").first()
+        return pv_generic.valor if pv_generic else Decimal("0.00")
+    
+# class Procedimento(models.Model):
+#     nome = models.CharField(max_length=100, blank=False, null=False)
+#     valor = models.FloatField(blank=False, null=False)
+
+#     def __str__(self):
+#         return self.nome
 
 class Producao(models.Model):
-    paciente = models.ForeignKey(Paciente, on_delete=models.DO_NOTHING)
-    #procedimento = models.ManyToManyField(Procedimento)
-    parecer_visita = models.BooleanField(default=False)
-    hemodialise = models.BooleanField(default=False)
-    hdfc = models.BooleanField(default=False)
-    cateter = models.IntegerField(default=0)
-    criado_em = models.DateField()
-    criado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,blank=True)
-    total_dia = models.FloatField(blank=True, null=True)
+    paciente = models.ForeignKey(Paciente, on_delete=models.DO_NOTHING, related_name="producoes")
+    data = models.DateField(default=timezone.now)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    total_dia = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
-    
-    def save(self, *args, **kwargs):
-        # Calcula a diferença em dias entre a data de implantação e a data de hoje
-        total = 0
-        if self.parecer_visita:
-            total += self.paciente.hospital.valor_parecer
-        if self.hemodialise:
-            total += self.paciente.hospital.valor_hemodialise
-        if self.hdfc:
-            total += self.paciente.hospital.valor_hdfc
-        self.total_dia = total + (self.paciente.hospital.valor_cateter * self.cateter)
-        super(Producao, self).save(*args, **kwargs)
+    class Meta:
+        unique_together = ("paciente", "data")  # 1 registro agregado por dia/paciente (opcional)
+        ordering = ["-data", "-id"]
 
     def __str__(self):
-        return self.paciente.nome
+        return f"Produção {self.paciente} em {self.data}"
+
+    def recomputar_total(self, save=True):
+        total = self.itens.aggregate(s=models.Sum(models.F("quantidade") * models.F("valor_unitario")))["s"] or Decimal("0")
+        self.total_dia = total
+        if save:
+            self.save(update_fields=["total_dia"])
+        return total
+
+
+class ItemProducao(models.Model):
+    producao = models.ForeignKey(Producao, on_delete=models.CASCADE, related_name="itens")
+    procedimento = models.ForeignKey(Procedimento, on_delete=models.PROTECT)
+    quantidade = models.PositiveIntegerField(default=1, validators=[MinValueValidator(0)])
+    # Snapshot do valor unitário vigente na data da produção
+    valor_unitario = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0"))])
+
+    class Meta:
+        unique_together = ("producao", "procedimento")  # evita duplicar o mesmo procedimento no mesmo dia
+        indexes = [models.Index(fields=["producao", "procedimento"])]
+
+    def __str__(self):
+        return f"{self.procedimento} x{self.quantidade} @ {self.valor_unitario}"
+
+    @property
+    def total(self):
+        return (self.valor_unitario or Decimal("0")) * self.quantidade
+
+    def clean(self):
+        # validação conforme o tipo do procedimento
+        if self.procedimento.tipo == Procedimento.TIPO_BOOLEANO and self.quantidade not in (0, 1):
+            from django.core.exceptions import ValidationError
+            raise ValidationError({"quantidade": "Para procedimentos booleanos, a quantidade deve ser 0 ou 1."})
+
+    def save(self, *args, **kwargs):
+        # se não foi definido explicitamente, pega o valor vigente na data da produção
+        if self.valor_unitario in (None, Decimal("0")):
+            data = self.producao.data
+            pac = self.producao.paciente
+            self.valor_unitario = ProcedimentoValor.valor_em(
+                procedimento=self.procedimento,
+                hospital=pac.hospital,
+                convenio=pac.convenio,
+                data=data
+            )
+        super().save(*args, **kwargs)
+        # atualiza o agregado do dia
+        self.producao.recomputar_total(save=True)
