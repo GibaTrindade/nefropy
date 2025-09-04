@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Produção — NefroPy{% endblock %}
+{% block content %}
+<h2 class="h5 fw-bold mb-3"><i class="bi bi-clipboard2-check me-2"></i>Produção</h2>
+
+<!-- Cards (mobile) -->
+<div class="d-md-none">
+  <div class="vstack gap-2">
+    {% for pr in producoes %}
+      <div class="card producao-card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <div class="fw-semibold">{{ pr.paciente.nome }}</div>
+              <div class="small text-secondary">{{ pr.paciente.hospital.nome|default:"—" }}</div>
+              <div class="small text-secondary">{{ pr.data|date:"d/m/Y" }}</div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold">R$ {{ pr.total_dia|floatformat:2 }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-secondary py-4">Sem lançamentos.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Tabela (desktop) -->
+<div class="table-responsive table-wrap d-none d-md-block shadow-sm">
+  <table class="table table-sm align-middle mb-0">
+    <thead class="table-light">
+      <tr>
+        <th>Data</th>
+        <th>Paciente</th>
+        <th>Hospital</th>
+        <th class="text-end">Total do dia</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pr in producoes %}
+        <tr>
+          <td>{{ pr.data|date:"d/m/Y" }}</td>
+          <td>{{ pr.paciente.nome }}</td>
+          <td>{{ pr.paciente.hospital.nome|default:"—" }}</td>
+          <td class="text-end">R$ {{ pr.total_dia|floatformat:2 }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="text-center py-4 text-secondary">Sem lançamentos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

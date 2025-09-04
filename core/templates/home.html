@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}NefroPy — Início{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
+    <div>
+      <h1 class="h4 fw-bold mb-1">Bem-vindo(a)</h1>
+      <p class="text-secondary mb-0">Atalhos rápidos</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <span class="badge text-bg-light">Hospitais: {{ total_hospitais }}</span>
+      <span class="badge text-bg-light">Pacientes: {{ total_pacientes }}</span>
+      <span class="badge text-bg-light">Produção: R$ {{ total_producao|floatformat:2 }}</span>
+    </div>
+  </div>
+</section>
+
+{% url 'hospitais_list' as hospitais_url %}
+{% url 'pacientes_list'  as pacientes_url %}
+{% url 'producao_list'   as producao_url %}
+
+<!-- Grid responsivo: 2 col no mobile, 3 no desktop -->
+<div class="row g-2 g-sm-3 mt-2">
+  {% include "components/icon_card.html" with href=hospitais_url icon="bi-hospital" title="Hospitais" subtitle="Lista e gestão" badge=total_hospitais %}
+  {% include "components/icon_card.html" with href=pacientes_url icon="bi-people" title="Pacientes" subtitle="Internados e ambulatório" badge=total_pacientes %}
+  {% include "components/icon_card.html" with href=producao_url icon="bi-clipboard2-check" title="Produção" subtitle="Lançamentos e totais" %}
+</div>
+
+{% endblock %}

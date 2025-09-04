@@ -1,0 +1,39 @@
+/* Base mobile-first */
+:root {
+  --nf-radius: 1rem;
+}
+
+/* Navbar gradiente já ok */
+.brand-gradient {
+  background: linear-gradient(135deg, #0d6efd 0%, #5b9dff 40%, #72dfcb 100%);
+}
+
+.hero { padding: .5rem 0 .25rem; }
+
+/* Icon cards responsivos */
+.icon-card {
+  border: none;
+  border-radius: var(--nf-radius);
+  transition: transform .12s ease, box-shadow .12s ease;
+  min-height: 72px;
+}
+.icon-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,.08); }
+
+.icon-xxl { font-size: clamp(1.75rem, 4.5vw, 2.3rem); line-height: 1; }
+
+/* List spacing agradável no mobile */
+.list-group-item { padding: .9rem 1rem; }
+
+/* Tabela desktop; cards no mobile */
+.table-wrap { border-radius: var(--nf-radius); overflow: hidden; }
+.producao-card { border-radius: var(--nf-radius); }
+
+/* Sticky bottom actions (opcional) */
+.sticky-bottom-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 1020;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(0,0,0,.06);
+}

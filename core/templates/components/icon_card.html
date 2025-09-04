@@ -1,0 +1,16 @@
+<div class="col-12 col-sm-6 col-lg-4">
+  <a href="{{ href }}" class="text-decoration-none">
+    <div class="card icon-card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="icon-xxl text-primary"><i class="bi {{ icon }}"></i></div>
+        <div class="flex-grow-1">
+          <div class="fw-bold text-body">{{ title }}</div>
+          {% if subtitle %}<div class="text-secondary small">{{ subtitle }}</div>{% endif %}
+        </div>
+        {% if badge %}
+          <span class="badge bg-primary-subtle text-primary-emphasis">{{ badge }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </a>
+</div>
