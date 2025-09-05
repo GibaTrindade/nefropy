@@ -213,9 +213,11 @@ class ItemProducao(models.Model):
         return (self.valor_unitario or Decimal("0")) * self.quantidade
 
     def clean(self):
-        # validação conforme o tipo do procedimento
+        from django.core.exceptions import ValidationError
+        # Se não tem procedimento ainda, não valida a regra do booleano
+        if not self.procedimento_id:
+            return
         if self.procedimento.tipo == Procedimento.TIPO_BOOLEANO and self.quantidade not in (0, 1):
-            from django.core.exceptions import ValidationError
             raise ValidationError({"quantidade": "Para procedimentos booleanos, a quantidade deve ser 0 ou 1."})
 
     def save(self, *args, **kwargs):

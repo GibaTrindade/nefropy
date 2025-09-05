@@ -1,0 +1,149 @@
+<div class="modal-header">
+  <h5 class="modal-title">Lançar produção</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<form method="post"
+      hx-post="{% url 'producao_nova' paciente.id %}"
+      hx-target="#modal-lg .modal-content"
+      hx-swap="innerHTML">
+  <div class="modal-body">
+    {% csrf_token %}
+
+    <div class="mb-2">
+      {{ form.data.label_tag }}{{ form.data }}
+      {% for e in form.data.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+    </div>
+
+    <hr>
+    <div class="small text-secondary mb-2">Itens</div>
+
+    {{ formset.management_form }}
+
+    <div id="itens-wrap" class="vstack gap-2">
+      {% for f in formset %}
+        <div class="row g-2 align-items-end border rounded p-2 item-row">
+          <div class="col-12 col-sm-7">
+            {{ f.procedimento.label_tag }}{{ f.procedimento }}
+            {% for e in f.procedimento.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="col-6 col-sm-3">
+            {{ f.quantidade.label_tag }}{{ f.quantidade }}
+            {% for e in f.quantidade.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="col-6 col-sm-2">
+            
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="mt-2 d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-primary" id="add-item">Adicionar item</button>
+      <button type="button" class="btn btn-sm btn-outline-danger" id="clear-empty">Limpar vazios</button>
+    </div>
+
+    {# --- Template oculto com empty_form --- #}
+    <template id="tpl-item">
+      <div class="row g-2 align-items-end border rounded p-2 item-row">
+        <div class="col-12 col-sm-7">
+          {{ formset.empty_form.procedimento.label_tag }}
+          {{ formset.empty_form.procedimento }}
+        </div>
+        <div class="col-6 col-sm-3">
+          {{ formset.empty_form.quantidade.label_tag }}
+          {{ formset.empty_form.quantidade }}
+        </div>
+        <div class="col-6 col-sm-2">
+          <label class="form-label d-none d-sm-block">&nbsp;</label>
+          {% if formset.can_delete %}
+            <div class="form-check">
+              {{ formset.empty_form.DELETE }} <label class="form-check-label">Remover</label>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-primary">Salvar</button>
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+  </div>
+</form>
+
+<script>
+(function(){
+  const prefix = "{{ formset.prefix }}";  // "itens"
+  const wrap = document.getElementById('itens-wrap');
+  const tpl = document.getElementById('tpl-item');
+  const totalInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+  // const initialInput = document.getElementById(`id_${prefix}-INITIAL_FORMS`); // criação: costuma ser 0
+
+  const reIndex = () => {
+    const rows = Array.from(wrap.querySelectorAll('.item-row'));
+    rows.forEach((row, idx) => {
+      // para cada elemento com name/id/for começando com prefixo, troque o índice via regex
+      row.querySelectorAll('[name],[id],[for]').forEach(el => {
+        if (el.name) {
+          el.name = el.name.replace(new RegExp(`^${prefix}-(\\d+)-`), `${prefix}-${idx}-`);
+        }
+        if (el.id) {
+          el.id = el.id.replace(new RegExp(`^id_${prefix}-(\\d+)-`), `id_${prefix}-${idx}-`);
+        }
+        const f = el.getAttribute && el.getAttribute('for');
+        if (f) {
+          el.setAttribute('for', f.replace(new RegExp(`^id_${prefix}-(\\d+)-`), `id_${prefix}-${idx}-`));
+        }
+      });
+    });
+    totalInput.value = rows.length; // TOTAL_FORMS = número de linhas atuais
+  };
+
+  const addItem = () => {
+    const frag = tpl.content.cloneNode(true);
+
+    // Troca __prefix__ -> um índice provisório (o final será ajustado no reIndex)
+    const nextIdx = wrap.querySelectorAll('.item-row').length;
+    frag.querySelectorAll('[name],[id],[for]').forEach(el => {
+      if (el.name) el.name = el.name.replace(/__prefix__/g, nextIdx);
+      if (el.id) el.id = el.id.replace(/__prefix__/g, nextIdx);
+      const f = el.getAttribute && el.getAttribute('for');
+      if (f) el.setAttribute('for', f.replace(/__prefix__/g, nextIdx));
+    });
+
+    // zera valores (deixe quantidade em branco)
+    frag.querySelectorAll('input, select').forEach(el => {
+      if (el.type === 'checkbox') el.checked = false;
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      if (el.type === 'number') el.value = "";
+    });
+
+    wrap.appendChild(frag);
+    reIndex();
+  };
+
+  const clearEmpty = () => {
+    // Remove linhas sem 'procedimento' selecionado
+    wrap.querySelectorAll('.item-row').forEach(row => {
+      const sel = row.querySelector(`select[name^="${prefix}"][name$="-procedimento"]`);
+      const hasProc = sel && sel.value;
+      if (!hasProc) row.remove();
+    });
+    reIndex();
+  };
+
+  document.getElementById('add-item')?.addEventListener('click', addItem);
+  document.getElementById('clear-empty')?.addEventListener('click', clearEmpty);
+
+  // dica: se quiser permitir remover linha manualmente com um botão:
+  // wrap.addEventListener('click', (e) => {
+  //   if (e.target.matches('.btn-remove-row')) {
+  //     e.target.closest('.item-row')?.remove();
+  //     reIndex();
+  //   }
+  // });
+})();
+</script>
+
+

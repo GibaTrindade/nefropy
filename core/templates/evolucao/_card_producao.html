@@ -1,0 +1,25 @@
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="fw-bold">Produção de {{ hoje|date:"d/m/Y" }}</div>
+      <button class="btn btn-sm btn-primary"
+              hx-get="{% url 'producao_nova' paciente.id %}"
+              hx-target="#modal-lg .modal-content" hx-swap="innerHTML">
+        Lançar produção
+      </button>
+    </div>
+    <hr class="text-muted">
+    {% if prod_hoje %}
+      <div class="small text-secondary mb-2">Total: R$ {{ prod_hoje.total_dia|floatformat:2 }}</div>
+      {% if prod_hoje.itens.all %}
+        <ul class="mb-0 small">
+        {% for it in prod_hoje.itens.all %}
+          <li>{{ it.procedimento.nome }} — {{ it.quantidade }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% else %}
+      <div class="text-secondary">Sem produção lançada hoje.</div>
+    {% endif %}
+  </div>
+</div>

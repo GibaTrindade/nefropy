@@ -1,0 +1,20 @@
+<div class="modal-header">
+  <h5 class="modal-title">Nova observação</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<form method="post"
+      hx-post="{% url 'obs_nova' paciente.id %}"
+      hx-target="#modal-lg .modal-content"
+      hx-swap="innerHTML">
+  <div class="modal-body">
+    {% csrf_token %}
+    <div class="mb-2">
+      {{ form.descricao.label_tag }}{{ form.descricao }}
+      {% for e in form.descricao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary">Salvar</button>
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+  </div>
+</form>

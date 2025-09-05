@@ -1,0 +1,26 @@
+<div class="modal-header">
+  <h5 class="modal-title">Implantar cateter</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<form method="post"
+      hx-post="{% url 'acesso_novo' paciente.id %}"
+      hx-target="#modal-lg .modal-content"
+      hx-swap="innerHTML">
+  <div class="modal-body">
+    {% csrf_token %}
+    <div class="row g-2">
+      <div class="col-12 col-sm-7">
+        {{ form.nome.label_tag }}{{ form.nome }}
+        {% for e in form.nome.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-12 col-sm-5">
+        {{ form.data_implantacao.label_tag }}{{ form.data_implantacao }}
+        {% for e in form.data_implantacao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary">Salvar</button>
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+  </div>
+</form>

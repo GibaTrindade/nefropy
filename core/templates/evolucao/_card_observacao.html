@@ -1,0 +1,19 @@
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="fw-bold">Última Observação</div>
+      <button class="btn btn-sm btn-primary"
+              hx-get="{% url 'obs_nova' paciente.id %}"
+              hx-target="#modal-lg .modal-content" hx-swap="innerHTML">
+        Nova observação
+      </button>
+    </div>
+    <hr class="text-muted">
+    {% if last_obs %}
+      <div class="small text-secondary mb-1">{{ last_obs.criado_em|date:"d/m/Y H:i" }} — por {{ last_obs.criado_por|default:"—" }}</div>
+      <div>{{ last_obs.descricao|linebreaksbr }}</div>
+    {% else %}
+      <div class="text-secondary">Nenhuma observação.</div>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,67 @@
+{% comment %} Renderiza a partir de views.producao_detalhe {% endcomment %}
+
+<!-- Versão para tabela (desktop): uma célula grande ocupando a linha -->
+{% if is_table %}
+  <td colspan="4" class="bg-body">
+    <div class="p-3">
+      <div class="fw-semibold mb-2">
+        {{ hospital.nome }} — {{ data|date:"d/m/Y" }}
+      </div>
+      <div class="vstack gap-2">
+        {% for paciente, producoes in by_paciente.items %}
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="fw-semibold mb-1">{{ paciente.nome }}</div>
+              {% for prod in producoes %}
+                {% if prod.itens.all %}
+                  <ul class="mb-0 small">
+                    {% for it in prod.itens.all %}
+                      <li>
+                        {{ it.procedimento.nome }}
+                        — {{ it.quantidade }} × R$ {{ it.valor_unitario|floatformat:2 }}
+                        = <strong>R$ {{ it.total|floatformat:2 }}</strong>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <div class="text-secondary small">Sem itens lançados.</div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-secondary">Nenhum paciente encontrado.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </td>
+
+<!-- Versão para cards (mobile): apenas conteúdo “solto” -->
+{% else %}
+  <div class="vstack gap-2">
+    {% for paciente, producoes in by_paciente.items %}
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="fw-semibold mb-1">{{ paciente.nome }}</div>
+          {% for prod in producoes %}
+            {% if prod.itens.all %}
+              <ul class="mb-0 small">
+                {% for it in prod.itens.all %}
+                  <li>
+                    {{ it.procedimento.nome }}
+                    — {{ it.quantidade }} × R$ {{ it.valor_unitario|floatformat:2 }}
+                    = <strong>R$ {{ it.total|floatformat:2 }}</strong>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="text-secondary small">Sem itens lançados.</div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-secondary">Nenhum paciente encontrado.</div>
+    {% endfor %}
+  </div>
+{% endif %}

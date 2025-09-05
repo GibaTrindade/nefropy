@@ -1,0 +1,19 @@
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="fw-bold">Último Acesso</div>
+      <button class="btn btn-sm btn-primary"
+              hx-get="{% url 'acesso_novo' paciente.id %}"
+              hx-target="#modal-lg .modal-content" hx-swap="innerHTML">
+        Implantar cateter
+      </button>
+    </div>
+    <hr class="text-muted">
+    {% if last_acesso %}
+      <div><strong>{{ last_acesso.nome }}</strong></div>
+      <div class="small text-secondary">Implantado em {{ last_acesso.data_implantacao|date:"d/m/Y" }} • {{ last_acesso.dias_acesso }} dia(s)</div>
+    {% else %}
+      <div class="text-secondary">Nenhum acesso registrado.</div>
+    {% endif %}
+  </div>
+</div>
